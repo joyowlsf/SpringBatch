@@ -9,7 +9,7 @@ import lombok.ToString;
 @ToString
 public class ColumnInfo {
     private String colNm;
-    //private String tblNm;
-   private String dbSeq;
-   private String status;
+    private String tblNm;
+    private String dbSeq;
+    private String status;
 }

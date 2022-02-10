@@ -1,53 +1,87 @@
 package com.tuna.inspector.domain.job;
 
-import com.tuna.inspector.domain.data.ColumnInfo;
-import com.tuna.inspector.domain.mapper.ColumnInfoMapper;
+import com.tuna.inspector.domain.data.ScoreInfo;
+import com.tuna.inspector.domain.data.TargetInfo;
+import com.tuna.inspector.domain.job.tasklet.*;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
+
 
 @Slf4j
-@Configuration
+@Configuration // spring batch의 모든 job을 등록해서 사용하게 해준다.
 @RequiredArgsConstructor
-public class JobConfiguration {
+public class JobConfiguration  {
     private final JobBuilderFactory jobBuilderFactory; //원하는 job을 쉽게 만들 수 있다.
     private final StepBuilderFactory stepBuilderFactory; // step을 생성
-    private final ColumnInfoMapper columnInfoMapper;
-
-    private final String JOB_NAME = "domain job";
+    private final DomainYnColNmCheckerTasklet domainYnColNmCheckerTasklet;
+    private final DomainYnSampleDataCheckerTasklet domainYnSampleDataCheckerTasklet;
+    private final DomainYnColLenCheckerTasklet domainYnColLenCheckerTasklet;
+    private final DomainYnSampleDataNmCheckerTasklet domainYnSampleDataNmCheckerTasklet;
+    private final DomainScoreInsertTasklet domainScoreInsertTasklet;
 
     @Bean
     //job에다가 step을 추가하고 job을 생성
-    public Job job(){
-        return jobBuilderFactory.get(JOB_NAME) //get() 메서드로 JobBuilder를 생성할 수 있다. -> job 생성
-                .start(step1()) // Step을 추가해서 가장 기본이 되는 빌더를 생성
+    public Job job() {
+        return (Job) jobBuilderFactory.get("example") //get() 메서드로 JobBuilder를 생성할 수 있다. -> job 생성
+                .start(step1())
+                .next(step2())
+                .next(step3())
+                .next(step4())
+                .next(step5())
                 .build();
     }
 
 
-    @Bean // 외부의 파라미터를 주입받을 수 있다.
+    @Bean
     @JobScope
-    public Step step1() {
-        return stepBuilderFactory.get(JOB_NAME + "Step1")
-                .tasklet((StepContribution, ChunkContext) -> {
-                    List<ColumnInfo> columnInfoList = columnInfoMapper.columnInfoList();
-                    for(ColumnInfo info:columnInfoList){
-                        log.info("ColumnInfo{}",info.toString());
-                    }
-                    log.info(">>>>>"+(JOB_NAME+"Step1 Started"));
-                    return RepeatStatus.FINISHED;
-                }).build();
+    public Step step1(){
+        return stepBuilderFactory.get("Step1")
+                .tasklet(domainYnColNmCheckerTasklet)
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    public Step step2(){
+        return stepBuilderFactory.get("Step2")
+                .tasklet(domainYnSampleDataCheckerTasklet)
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    public Step step3() {
+        return stepBuilderFactory.get("Stepq3")
+                .tasklet(domainYnColLenCheckerTasklet)
+                .build();
+    };
+
+    @Bean
+    @JobScope
+    public Step step4() {
+        return stepBuilderFactory.get("Step4")
+                .tasklet(domainYnSampleDataNmCheckerTasklet)
+                .build();
+    };
+
+
+
+
+    @Bean
+    @JobScope
+    public Step step5(){
+        return stepBuilderFactory.get("step4")
+                .tasklet(domainScoreInsertTasklet)
+                .build();
     }
 
 }
